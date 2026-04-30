@@ -1,3 +1,22 @@
+// ⚠️ IMPORTANT: This pipeline is designed to run on Jenkins agents provisioned by the Kubernetes plugin.
+//
+// - The `container('maven')`, `container('docker')`, and `container('owasp')` steps
+//   REQUIRE a Kubernetes Pod Template with containers named exactly:
+//     - maven
+//     - docker
+//     - owasp
+//
+// - The agent must be configured with a pod template that includes these containers,
+//   otherwise the pipeline will fail with "container not found" errors.
+//
+// - This will NOT work on a standard Jenkins agent (e.g., static VM) without modification.
+//   If running outside Kubernetes, replace `container(...)` blocks with direct `sh` steps
+//   and ensure required tools are installed on the agent.
+//
+// - Docker builds assume the container has access to a Docker daemon (e.g., docker-in-docker
+//   or mounted /var/run/docker.sock). Misconfiguration will cause build/push failures.
+//
+// Make sure your Jenkins Kubernetes plugin and pod templates are correctly configured before running.
 pipeline {
     agent { label "maven" }
     options {
