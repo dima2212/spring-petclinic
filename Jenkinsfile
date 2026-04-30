@@ -56,7 +56,10 @@ pipeline {
         stage("Build") {
             steps{
                 container("maven"){
-                    sh "mvn -B clean package -DskipTests"
+                    sh """
+                        mvn versions:set -DnewVersion=${ARTIFACT_VERSION} -DgenerateBackupPoms=false
+                        mvn -B clean package -DskipTests
+                    """
                 }
             }
         }
