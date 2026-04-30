@@ -22,13 +22,13 @@ pipeline {
             steps {
                 container("maven") {
                     script {
-                        def pom_version = sh(
+                        def version = sh(
                             script: "mvn help:evaluate -Dexpression=project.version -q -DforceStdout",
                             returnStdout: true
-                        ).trim()
-                        pom_version = pom_version.replace("-SNAPSHOT", "")
-                        ARTIFACT_VERSION = "${pom_version}.${BUILD_NUMBER}"
-                        currentBuild.displayName = "${ARTIFACT_VERSION}"
+                        ).trim().replace('-SNAPSHOT', '')
+
+                        ARTIFACT_VERSION = "${version}.${BUILD_NUMBER}"
+                        currentBuild.displayName = ARTIFACT_VERSION
                     }
                 }
             }
@@ -73,11 +73,21 @@ pipeline {
             steps {
                 container('docker') {
                     withCredentials([usernamePassword(credentialsId: 'dockerhub-token', passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME')]) {
-                        sh 'echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin'
-                        sh """
-                            docker build -t "${DOCKER_USERNAME}/petclinic:${ARTIFACT_VERSION}" .
-                            docker push "${DOCKER_USERNAME}/petclinic:${ARTIFACT_VERSION}"
-                        """
+                    sh """
+                        set -euo pipefail
+
+                        echo "\$DOCKER_PASSWORD" | docker login -u "\$DOCKER_USERNAME" --password-stdin
+
+                        IMAGE="\$DOCKER_USERNAME/petclinic"
+
+                        docker build \
+                            -t "\$IMAGE:${ARTIFACT_VERSION}" \
+                            -t "\$IMAGE:latest" \
+                            .
+
+                        docker push "\$IMAGE:${ARTIFACT_VERSION}"
+                        docker push "\$IMAGE:latest"
+                    """
                     }
                 }
             }
