@@ -12,7 +12,7 @@ node {
                         script: 'return ["ERROR: could not fetch tags"]'
                     ],
                     script: [
-                        classpath: [], sandbox: true,
+                        classpath: [], sandbox: false,
                         script: '''
                             try {
                                 def cmd = ["curl", "-s",
@@ -63,26 +63,30 @@ pipeline {
         }
 
         stage('Update GitOps Repo') {
+            environment {
+                IMAGE_TAG  = "${params.IMAGE_TAG}"
+                TARGET_ENV = "${params.TARGET_ENV}"
+            }
             steps {
                 withCredentials([usernamePassword(credentialsId: 'git-token', usernameVariable: 'GIT_USER', passwordVariable: 'GIT_TOKEN')]) {
                     script {
-                        sh """
-                            git clone https://\${GIT_USER}:\${GIT_TOKEN}@github.com/dima2212/gitops
+                        sh '''
+                            git clone https://${GIT_USER}:${GIT_TOKEN}@github.com/dima2212/gitops
                             cd gitops
 
                             git config user.email "jenkins@local.ci"
                             git config user.name  "Jenkins CI"
 
-                            sed -i "s/tag:.*/tag: \\"${params.IMAGE_TAG}\\"/" charts/petclinic/values-${params.TARGET_ENV}.yaml
+                            sed -i "s/tag:.*/tag: \\"${IMAGE_TAG}\\"/" charts/petclinic/values-${TARGET_ENV}.yaml
 
                             if git diff --quiet; then
-                                echo "No change — ${params.IMAGE_TAG} already in values-${params.TARGET_ENV}.yaml"
+                                echo "No change — ${IMAGE_TAG} already in values-${TARGET_ENV}.yaml"
                             else
-                                git add charts/petclinic/values-${params.TARGET_ENV}.yaml
-                                git commit -m "chore(${params.TARGET_ENV}): promote petclinic to ${params.IMAGE_TAG}"
+                                git add charts/petclinic/values-${TARGET_ENV}.yaml
+                                git commit -m "chore(${TARGET_ENV}): promote petclinic to ${IMAGE_TAG}"
                                 git push origin main
                             fi
-                        """
+                        '''
                     }
                 }
             }
