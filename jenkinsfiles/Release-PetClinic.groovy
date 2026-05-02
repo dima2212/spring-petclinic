@@ -87,6 +87,7 @@ pipeline {
                                 git push origin main
                             fi
                         '''
+                        currentBuild.displayName = "Promote ${IMAGE_TAG} → ${TARGET_ENV}"
                     }
                 }
             }
